@@ -56,3 +56,34 @@ In main, which acts as an orchestrator/coordinator, we take in command line argu
 
 ## Part 2 - Multithreading using Thread Pool 
 Using the thread pool that we implemented in `/pthreads-kit`, we can easily turn our part 1 design into a multithreaded application. Recall that our pthreads-kit implemented a blocking queue and a thread pool with some number of worker_threads that automatically pull tasks from the queue and execute their enclosed function pointers. In the last section, we implemented the program in a single-threaded manner, with chunks ending on `\n` breaks being passed sequentially into our grep_search function. To make this multithreaded, we will instantiate a Pool struct and pass tasks into the pool queue instead - the Pool will handle the rest. 
+
+### Timing Test (single vs parallel)
+`st_main.c` is the single-threaded version. The test file `/tmp/big_sparse.txt` contains 1,500,000 lines where only 25 lines include the keyword `special_keyword`. The rest are filler lines.
+
+Create the file:
+```
+awk 'BEGIN{for(i=1;i<=1500000;i++){if(i%60000==0 && i/60000<=25){printf("special_keyword line %d\n",i)} else {printf("random line %d\n",i)}}}' > /tmp/big_sparse.txt
+```
+
+Build single-threaded and parallel binaries:
+```
+gcc -Wall -Wextra -O2 -pthread -I. st_main.c pgrep.c -o pgrep_st
+gcc -Wall -Wextra -O2 -pthread -I. main.c pgrep.c threads/blocking_queue.c threads/thread_pool.c -o pgrep
+```
+
+Run the timing test:
+```
+time ./pgrep_st special_keyword /tmp/big_sparse.txt > /dev/null
+time ./pgrep special_keyword /tmp/big_sparse.txt > /dev/null
+```
+
+Sample results on this machine:
+```
+real    0m0.074s
+user    0m0.062s
+sys     0m0.010s
+
+real    0m0.040s
+user    0m0.043s
+sys     0m0.008s
+```
